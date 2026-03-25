@@ -1,0 +1,21 @@
+services:
+  central-server:
+    build: ./server
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  local-agent:
+    build: ./agent
+    environment:
+      - SERVER_URL=http://central-server:5000/api/metrics
+      - SERVER_NAME=host-agent
+      - HOST=localhost
+    network_mode: "host"
+    pid: "host"
+    volumes:
+      - /proc:/proc:ro
+      - /sys:/sys:ro
+    restart: unless-stopped

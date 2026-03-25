@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Server Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .server-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeIn 1s ease 0.4s both;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 25px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .card h3 {
+            margin: 0 0 20px 0;
+            text-align: center;
+            color: #333;
+            font-size: 1.4rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .server-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .metric {
+            margin: 15px 0;
+            padding: 12px;
+            background: rgba(248, 249, 250, 0.8);
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .metric:hover {
+            background: rgba(248, 249, 250, 1);
+            transform: translateX(3px);
+        }
+
+        .metric-label {
+            font-weight: 500;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .value {
+            font-weight: bold;
+            font-size: 1.1rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .good {
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .warning {
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .critical {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        canvas {
+            width: 100%;
+            height: 180px;
+            margin-top: 20px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.5);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.9rem;
+            animation: fadeIn 1s ease 0.6s both;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-good { background: #10b981; }
+        .status-warning { background: #f59e0b; }
+        .status-critical { background: #ef4444; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .server-grid { grid-template-columns: 1fr; }
+            body { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Server Monitoring Dashboard</h1>
+    <div class="subtitle">Real-time system performance monitoring</div>
+    <div id="server-grid" class="server-grid"></div>
+    <div class="footer">
+        <span class="status-indicator status-good"></span>
+        Auto‑refresh every 10 seconds
+    </div>
+
+    <script>
+        async function fetchData() {
+            const response = await fetch('/api/servers');
+            const servers = await response.json();
+            const container = document.getElementById('server-grid');
+            container.innerHTML = '';
+
+            servers.forEach(server => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                const statusClass = getStatusClass(server.cpu_avg_5min || 0);
+                card.innerHTML = `
+                    <h3>
+                        <span class="server-icon">S</span>
+                        ${server.name}
+                    </h3>
+                    <div class="metric">
+                        <span class="metric-label">🖥️ Host</span>
+                        <span class="value">${server.host}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">⚡ CPU (5‑min avg)</span>
+                        <span class="value ${getColorClass(server.cpu_avg_5min)}">${server.cpu_avg_5min !== null ? server.cpu_avg_5min + '%' : 'N/A'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">💾 RAM</span>
+                        <span class="value ${getColorClass(server.ram)}">${server.ram !== null ? server.ram + '%' : 'N/A'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">📁 Storage</span>
+                        <span class="value ${getColorClass(server.storage)}">${server.storage !== null ? server.storage + '%' : 'N/A'}</span>
+                    </div>
+                    <canvas id="gauge-${server.id}" width="200" height="200"></canvas>
+                `;
+                container.appendChild(card);
+                drawGauge(`gauge-${server.id}`, 'CPU', server.cpu_avg_5min || 0);
+            });
+        }
+
+        function getColorClass(value) {
+            if (value === null) return '';
+            if (value < 50) return 'good';
+            if (value < 80) return 'warning';
+            return 'critical';
+        }
+
+        function getStatusClass(value) {
+            if (value < 50) return 'status-good';
+            if (value < 80) return 'status-warning';
+            return 'status-critical';
+        }
+
+        function drawGauge(canvasId, label, value) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const angle = (value / 100) * Math.PI - Math.PI/2;
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const centerX = canvas.width/2;
+            const centerY = canvas.height/2;
+            const radius = canvas.width/2 - 10;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, -Math.PI/2, angle);
+            ctx.lineWidth = 20;
+            ctx.strokeStyle = getColor(value);
+            ctx.stroke();
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 20px Arial';
+            ctx.fillText(value + '%', centerX-30, centerY+10);
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'gray';
+            ctx.fillText(label, centerX-15, centerY+30);
+        }
+
+        function getColor(val) {
+            if (val < 50) return '#10b981';
+            if (val < 80) return '#f59e0b';
+            return '#ef4444';
+        }
+
+        setInterval(fetchData, 10000);
+        fetchData();
+    </script>
+</body>
+</html>
