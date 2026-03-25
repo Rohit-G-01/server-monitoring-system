@@ -209,6 +209,33 @@
             50% { opacity: 0.5; }
         }
 
+        .offline {
+            opacity: 0.6;
+            position: relative;
+        }
+
+        .offline::after {
+            content: 'OFFLINE';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ef4444;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        .offline .metric {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .hide-offline {
+            display: none;
+        }
+
         @media (max-width: 768px) {
             h1 { font-size: 2rem; }
             .server-grid { grid-template-columns: 1fr; }
@@ -235,6 +262,16 @@
             servers.forEach(server => {
                 const card = document.createElement('div');
                 card.className = 'card';
+                
+                // Check if server is offline (all metrics are null)
+                const isOffline = server.cpu_avg_5min === null && 
+                                 server.ram === null && 
+                                 server.storage === null;
+                
+                if (isOffline) {
+                    card.classList.add('offline');
+                }
+                
                 const statusClass = getStatusClass(server.cpu_avg_5min || 0);
                 card.innerHTML = `
                     <h3>
@@ -260,7 +297,14 @@
                     <canvas id="gauge-${server.id}" width="200" height="200"></canvas>
                 `;
                 container.appendChild(card);
-                drawGauge(`gauge-${server.id}`, 'CPU', server.cpu_avg_5min || 0);
+                
+                // Only draw gauge if server has data
+                if (!isOffline) {
+                    drawGauge(`gauge-${server.id}`, 'CPU', server.cpu_avg_5min || 0);
+                } else {
+                    // Draw offline indicator on canvas
+                    drawOfflineIndicator(`gauge-${server.id}`);
+                }
             });
         }
 
@@ -275,6 +319,28 @@
             if (value < 50) return 'status-good';
             if (value < 80) return 'status-warning';
             return 'status-critical';
+        }
+
+        function drawOfflineIndicator(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const centerX = canvas.width/2;
+            const centerY = canvas.height/2;
+            
+            // Draw "OFFLINE" text
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 16px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText('OFFLINE', centerX, centerY);
+            
+            // Draw small icon
+            ctx.font = '24px Segoe UI';
+            ctx.fillText('⚠️', centerX, centerY - 25);
         }
 
         function drawGauge(canvasId, label, value) {
