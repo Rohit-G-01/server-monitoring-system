@@ -37,11 +37,28 @@
 
         .server-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 25px;
-            max-width: 1400px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1600px;
             margin: 0 auto;
             animation: fadeIn 1s ease 0.4s both;
+        }
+
+        /* Optimize for very large screen (30+ servers) */
+        @media (min-width: 1920px) {
+            .server-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 18px;
+                max-width: 1800px;
+            }
+        }
+
+        /* Optimize for medium screens */
+        @media (max-width: 1200px) and (min-width: 769px) {
+            .server-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 18px;
+            }
         }
 
         .card {
@@ -262,6 +279,17 @@
             animation: spin 1s linear infinite;
         }
 
+        .server-count {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
         .controls {
             text-align: center;
             margin-bottom: 30px;
@@ -293,6 +321,7 @@
             <span id="refreshIcon">🔄</span>
             <span id="refreshText">Refresh Now</span>
         </button>
+        <span class="server-count" id="serverCount">Loading servers...</span>
     </div>
     
     <div id="server-grid" class="server-grid"></div>
@@ -333,6 +362,17 @@
             const container = document.getElementById('server-grid');
             container.innerHTML = '';
 
+            // Update server count
+            const serverCountElement = document.getElementById('serverCount');
+            const onlineCount = servers.filter(s => s.cpu_avg_5min !== null || s.ram !== null || s.storage !== null).length;
+            const offlineCount = servers.length - onlineCount;
+            
+            if (offlineCount > 0) {
+                serverCountElement.textContent = `${servers.length} servers (${onlineCount} online, ${offlineCount} offline)`;
+            } else {
+                serverCountElement.textContent = `${servers.length} servers online`;
+            }
+
             servers.forEach(server => {
                 const card = document.createElement('div');
                 card.className = 'card';
@@ -368,17 +408,17 @@
                         <span class="metric-label">📁 Storage</span>
                         <span class="value ${getColorClass(server.storage)}">${server.storage !== null ? server.storage + '%' : 'N/A'}</span>
                     </div>
-                    <canvas id="gauge-${server.id}" width="200" height="200"></canvas>
+                    
                 `;
                 container.appendChild(card);
-                
+                // <canvas id="gauge-${server.id}" width="200" height="200"></canvas>
                 // Only draw gauge if server has data
-                if (!isOffline) {
-                    drawGauge(`gauge-${server.id}`, 'CPU', server.cpu_avg_5min || 0);
-                } else {
-                    // Draw offline indicator on canvas
-                    drawOfflineIndicator(`gauge-${server.id}`);
-                }
+                // if (!isOffline) {
+                //     drawGauge(`gauge-${server.id}`, 'CPU', server.cpu_avg_5min || 0);
+                // } else {
+                //     // Draw offline indicator on canvas
+                //     drawOfflineIndicator(`gauge-${server.id}`);
+                // }
             });
         }
 

@@ -14,11 +14,25 @@ docker run -d \
   --pid=host \
   --network host \
   --security-opt apparmor=unconfined \
-  -e SERVER_URL="http://31.220.88.203:5000/api/metrics" \
-  -e SERVER_NAME="Mainnet-L1X-Explorer-API-V1 and v2" \
-  -e HOST="Contabo-159.195.71.81" \
+  -e SERVER_URL="http://<central-server-ip>:5000/api/metrics" \
+  -e SERVER_NAME="<unique-name-for-this-server>" \
+  -e HOST="<client-server-ip-or-hostname>" \
   -v /sys:/sys:ro \
   --restart unless-stopped \
   monitor-agent
 
+
+or 
+
+
+
+docker run -d \
+  --name monitor-agent \
+  --network host \
+  -e SERVER_URL="http://<central-server-ip>:5000/api/metrics" \
+  -e SERVER_NAME="<unique-name-for-this-server>" \
+  -e HOST="<client-server-ip-or-hostname>" \
+  -v /sys:/sys:ro \
+  --restart unless-stopped \
+  monitor-agent
 ```
