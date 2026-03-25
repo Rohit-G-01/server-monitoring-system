@@ -232,6 +232,47 @@
             background: rgba(239, 68, 68, 0.1);
         }
 
+        .refresh-button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 10px;
+        }
+
+        .refresh-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .refresh-button:active {
+            transform: translateY(0);
+        }
+
+        .refresh-button.loading {
+            animation: spin 1s linear infinite;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease 0.3s both;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         .hide-offline {
             display: none;
         }
@@ -246,13 +287,46 @@
 <body>
     <h1>Server Monitoring Dashboard</h1>
     <div class="subtitle">Real-time system performance monitoring</div>
+    
+    <div class="controls">
+        <button id="refreshButton" class="refresh-button" onclick="manualRefresh()">
+            <span id="refreshIcon">🔄</span>
+            <span id="refreshText">Refresh Now</span>
+        </button>
+    </div>
+    
     <div id="server-grid" class="server-grid"></div>
     <div class="footer">
         <span class="status-indicator status-good"></span>
-        Auto‑refresh every 10 seconds
+        Auto‑refresh every 60 seconds
     </div>
 
     <script>
+        async function manualRefresh() {
+            const button = document.getElementById('refreshButton');
+            const icon = document.getElementById('refreshIcon');
+            const text = document.getElementById('refreshText');
+            
+            // Add loading state
+            button.classList.add('loading');
+            text.textContent = 'Refreshing...';
+            
+            try {
+                await fetchData();
+                text.textContent = 'Refreshed!';
+                setTimeout(() => {
+                    text.textContent = 'Refresh Now';
+                    button.classList.remove('loading');
+                }, 1500);
+            } catch (error) {
+                text.textContent = 'Error!';
+                setTimeout(() => {
+                    text.textContent = 'Refresh Now';
+                    button.classList.remove('loading');
+                }, 1500);
+            }
+        }
+
         async function fetchData() {
             const response = await fetch('/api/servers');
             const servers = await response.json();
@@ -373,7 +447,7 @@
             return '#ef4444';
         }
 
-        setInterval(fetchData, 10000);
+        setInterval(fetchData, 60000); // Changed from 10000 to 60000 (60 seconds)
         fetchData();
     </script>
 </body>
